@@ -1,0 +1,16 @@
+version: '3.7'
+services:
+  postgres:
+    ports:
+      - '5678:5432'
+    volumes:
+      - ugc_service_data:/var/lib/postgresql/data
+
+  producer:
+    environment:
+      - DB_PORT=${DB_PORT}
+      - DB_HOST=host.docker.internal
+      - KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092
+
+volumes:
+  ugc_service_data:

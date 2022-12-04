@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "ugc-analytics"
+version = "0.1.0"
+description = ""
+authors = ["Dan <babindj@uriit.ru>"]
+readme = "README.md"
+packages = [{include = "ugc_analytics"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiomisc = "^16.2.9"
+pydantic = "^1.10.2"
+orjson = "^3.8.2"
+aiokafka = "^0.8.0"
+clickhouse-driver = "^0.2.5"
+backoff = "^2.2.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

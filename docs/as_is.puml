@@ -1,0 +1,35 @@
+@startuml
+!include <C4/C4_Container>
+'https://plantuml.com/component-diagram
+
+LAYOUT_LANDSCAPE()
+title Архитектура системы управления онлайн-кинотеатром
+
+Boundary(AdminService, "Админка") {
+    Container(AdminPanel, "Django", "Панель администратора")
+    ContainerDb(AdminPanelDB, "Postgres", "База данных")
+}
+Rel_U(AdminPanel, AdminPanelDB, "read/write")
+
+Boundary(MoviesService, "API кинопроизведений") {
+    Container(MoviesAPI, "FastAPI", "API")
+    ContainerDb(MoviesDB, "Elasticsearch", "База данных")
+    ContainerDb(MoviesCache, "Redis", "Кэш")
+}
+Rel_L(MoviesAPI, MoviesCache, "read/write")
+Rel(MoviesAPI, MoviesDB, "read")
+
+Container("ETL", "ETL Service", "Python")
+Rel_D(ETL, MoviesDB, "write")
+Rel(ETL, AdminPanelDB, "read")
+
+Boundary(AuthService, "Авторизация") {
+    Container(Auth, "Flask", "Flask")
+    ContainerDb(AuthDB, "Postgres", "База данных")
+    ContainerDb(AuthCache, "Redis", "Кэш")
+}
+Rel_L(Auth, AuthDB, "read/write")
+Rel(Auth, AuthCache, "read/write")
+Rel_U(MoviesAPI, Auth, "authorize/authenticate")
+
+@enduml

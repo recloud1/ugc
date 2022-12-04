@@ -1,0 +1,34 @@
+version: '3.7'
+services:
+  consumer:
+    restart: on-failure
+    build:
+      context: .
+    environment:
+      - CLICKHOUSE_HOST=docker.host.internal
+      - CLICKHOUSE_PORT=8123
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+    env_file:
+      - ./.env
+
+  clickhouse:
+    image: yandex/clickhouse-server:20.4
+    container_name: ugc_clickhouse
+    hostname: clickhouse-node1
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    volumes:
+      - ./clickhouse_conf/node1:/etc/clickhouse-server
+
+  tabix:
+    image: spoonest/clickhouse-tabix-web-client
+    ports:
+      - '8080:80'
+    depends_on:
+      - clickhouse
+    environment:
+      - CH_NAME=clickhouse
+      - CH_HOST=http://localhost:8123
+      - CH_LOGIN=admin
+      - CH_PASSWORD=123

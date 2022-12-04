@@ -1,0 +1,64 @@
+version: '3.7'
+services:
+  postgres:
+    image: 'postgres:12.0-alpine'
+    container_name: 'ugc_service_postgres'
+    restart: on-failure
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    env_file:
+      - ./.env
+    volumes:
+      - ugc_service_data:/var/lib/postgresql/data
+    networks:
+      - ugc_api_net
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -d $${{DB_NAME}} -U $${{DB_USER}}' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    container_name: 'ugc_service_api'
+    restart: always
+    build:
+      context: .
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+
+  producer:
+    container_name: 'ugc_service_kafka_producer'
+    #    restart: on-failure
+    build:
+      context: .
+      args:
+        MAX_WORKERS: ${APP_MAX_WORKERS}
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+    entrypoint: [ 'python', 'events/producer.py' ]
+    env_file:
+      - ./.env
+    networks:
+      - ugc_api_net
+
+  nginx:
+    container_name: 'ugc_service_nginx'
+    build: ./nginx
+    ports:
+      - '80:80'
+    depends_on:
+      - api
+    networks:
+      - ugc_api_net
+
+networks:
+  ugc_api_net:
+
+volumes:
+  ugc_service_data:
