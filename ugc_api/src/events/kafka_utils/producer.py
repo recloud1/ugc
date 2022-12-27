@@ -5,12 +5,11 @@ from typing import Any, Type, TypeVar
 import aiomisc
 import orjson
 from aiokafka import AIOKafkaProducer
-from pydantic import BaseModel, ValidationError
-
 from events.constants import Events, get_topic_name
 from events.kafka_utils.config import KafkaConfig
+from pydantic import BaseModel, ValidationError
 
-OutputType = TypeVar('OutputType', bound=BaseModel)
+OutputType = TypeVar("OutputType", bound=BaseModel)
 
 
 class KafkaProducer(aiomisc.Service):
@@ -24,18 +23,18 @@ class KafkaProducer(aiomisc.Service):
         self.producer: AIOKafkaProducer | None = None
 
         if not self.OutputModel:
-            raise TypeError('You should specify OutputModel type')
+            raise TypeError("You should specify OutputModel type")
 
     async def start(self, trigger_start: bool = True) -> None:
         if self.producer is None:
             self.producer = self._create_producer()
         else:
-            raise Exception('Only single run allowed for producer')
+            raise Exception("Only single run allowed for producer")
 
         await self.producer.start()
 
         await self.on_startup()
-        self.logger.info(f'started up {self.kafka_config.input_topic}')
+        self.logger.info(f"started up {self.kafka_config.input_topic}")
 
         if trigger_start:
             self.start_event.set()
@@ -60,7 +59,7 @@ class KafkaProducer(aiomisc.Service):
                 message = self.pack(message)
             except ValidationError as e:
                 raise TypeError(
-                    f'Failed to pack message {type(message)} to {self.OutputModel}'
+                    f"Failed to pack message {type(message)} to {self.OutputModel}"
                 ) from e
 
         await self.producer.send(get_topic_name(event), message.dict())
@@ -72,12 +71,12 @@ class KafkaProducer(aiomisc.Service):
         Функция автоматически вызывается, если при отправке сообщения не был
          передан объект соответствующего типа
         """
-        raise NotImplemented('Packing data is not implemented')
+        raise NotImplemented("Packing data is not implemented")
 
     def _create_producer(self) -> AIOKafkaProducer:
         return AIOKafkaProducer(
             client_id=self.kafka_config.group_id,
             loop=self.loop,
             bootstrap_servers=self.kafka_config.bootstrap_servers,
-            value_serializer=orjson.dumps
+            value_serializer=orjson.dumps,
         )

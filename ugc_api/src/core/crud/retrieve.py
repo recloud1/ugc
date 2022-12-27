@@ -1,21 +1,20 @@
-from typing import Type, List, Any, Collection, Iterable, Callable, TypeVar
+from typing import Any, Callable, Collection, Iterable, List, Type, TypeVar
 
-from sqlalchemy import select, func
+from core.crud.exceptions import ObjectNotExists
+from core.crud.types import Count, Entity, Id
+from models import Base
+from schemas.base import Model
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 
-from core.crud.exceptions import ObjectNotExists
-from core.crud.types import Entity, Id, Count
-from models import Base
-from schemas.base import Model
-
 
 async def retrieve_object(
-        session: AsyncSession,
-        entity: Type[Entity],
-        id_: Id,
-        options: List[Any] = None,
-        execution_options: dict[str, Any] = None
+    session: AsyncSession,
+    entity: Type[Entity],
+    id_: Id,
+    options: List[Any] = None,
+    execution_options: dict[str, Any] = None,
 ) -> Entity:
     """
     Load object from database and ensure it exists
@@ -34,19 +33,19 @@ async def retrieve_object(
         query = query.execution_options(**execution_options)
     obj = await session.scalar(query)
     if obj is None:
-        raise ObjectNotExists(f'Object {entity.__name__} not found in database', id_)
+        raise ObjectNotExists(f"Object {entity.__name__} not found in database", id_)
 
     return obj
 
 
 async def pagination(
-        session: AsyncSession,
-        ModelClass: Type[Entity],
-        page: int = 1,
-        rows_per_page: int | None = 25,
-        with_count: bool = True,
-        with_deleted: bool = False,
-        query: Select = None
+    session: AsyncSession,
+    ModelClass: Type[Entity],
+    page: int = 1,
+    rows_per_page: int | None = 25,
+    with_count: bool = True,
+    with_deleted: bool = False,
+    query: Select = None,
 ) -> tuple[list[Entity], Count]:
     """
     Выполняет запрос с пагинацией.
@@ -66,7 +65,9 @@ async def pagination(
         query = query.execution_options(include_deleted=True)
 
     if with_count:
-        rows_number = (await session.execute(select(func.count('*')).select_from(query))).scalar_one()
+        rows_number = (
+            await session.execute(select(func.count("*")).select_from(query))
+        ).scalar_one()
     else:
         rows_number = None
 
@@ -79,22 +80,20 @@ async def pagination(
     return values, rows_number
 
 
-Existing = TypeVar('Existing', bound=Base)
-Arrived = TypeVar('Arrived', bound=Model)
+Existing = TypeVar("Existing", bound=Base)
+Arrived = TypeVar("Arrived", bound=Model)
 
 
 async def refresh_collection(
-        session: AsyncSession,
-        existing_objects: Iterable[Existing],
-        arrived_objects: Iterable[Arrived],
-        creation_class: Type[Existing],
-        secondary_relation_base_obj_name: str,
-        exclude_on_creation: set[str] = None,
-        equal_by: str | Callable[[Existing, Arrived], bool] = 'id',
-        creation_func: Callable = None,
-
-        **creation_params: Any,
-
+    session: AsyncSession,
+    existing_objects: Iterable[Existing],
+    arrived_objects: Iterable[Arrived],
+    creation_class: Type[Existing],
+    secondary_relation_base_obj_name: str,
+    exclude_on_creation: set[str] = None,
+    equal_by: str | Callable[[Existing, Arrived], bool] = "id",
+    creation_func: Callable = None,
+    **creation_params: Any,
 ) -> List[Existing]:
     """
     Актуализация списка значений исходя из прибывших
@@ -116,13 +115,17 @@ async def refresh_collection(
 
     if type(equal_by) == str:
         equal_by_arg = equal_by
-        equal_by = lambda e, a: getattr(e, equal_by_arg) == getattr(a, equal_by_arg, None)
+        equal_by = lambda e, a: getattr(e, equal_by_arg) == getattr(
+            a, equal_by_arg, None
+        )
     new_values = []
 
     matched_objects = []
 
     for arrived in arrived_objects:
-        matched = list(filter(lambda existing: equal_by(existing, arrived), existing_objects))
+        matched = list(
+            filter(lambda existing: equal_by(existing, arrived), existing_objects)
+        )
         if matched:
             matched_objects.append(matched[0])
         else:
@@ -135,8 +138,8 @@ async def refresh_collection(
         ]
     else:
         values = [
-            creation_func(**new.dict(exclude=exclude_on_creation), **creation_params) for new in
-            new_values
+            creation_func(**new.dict(exclude=exclude_on_creation), **creation_params)
+            for new in new_values
         ]
 
     session.add_all(values)
@@ -150,7 +153,7 @@ async def refresh_collection(
     return [*matched_objects, *entity_values]
 
 
-RetrieveType = TypeVar('RetrieveType', bound=Base)
+RetrieveType = TypeVar("RetrieveType", bound=Base)
 
 
 def check_missing_entities(ids: Iterable[int], objects: List[Base], model: Base):
@@ -167,16 +170,16 @@ def check_missing_entities(ids: Iterable[int], objects: List[Base], model: Base)
 
         raise ObjectNotExists(
             message=f'Objects with ids {", ".join(map(str, diff))} not exists',
-            ids=list(diff)
+            ids=list(diff),
         )
 
 
 async def retrieve_batch(
-        session: AsyncSession,
-        model: Type[RetrieveType],
-        ids: Collection[int | str],
-        query: Select = None,
-        attr_name: str = 'id'
+    session: AsyncSession,
+    model: Type[RetrieveType],
+    ids: Collection[int | str],
+    query: Select = None,
+    attr_name: str = "id",
 ) -> dict[int | str, RetrieveType]:
     """
     Запрашивает набор объектов по идентификатором из базы данных
@@ -189,7 +192,9 @@ async def retrieve_batch(
     :return: словарь из пар идентификатор:объект
     """
 
-    query = (select(model) if query is None else query).where(getattr(model, attr_name).in_(ids))
+    query = (select(model) if query is None else query).where(
+        getattr(model, attr_name).in_(ids)
+    )
 
     objects = (await session.execute(query)).scalars().all()
 

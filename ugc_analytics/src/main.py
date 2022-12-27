@@ -1,7 +1,6 @@
 import logging
 
 import aiomisc
-
 from core.config import envs
 from events.kafka_utils.config import KafkaConfig
 from events.kafka_utils.consumer import KafkaConsumer

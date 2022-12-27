@@ -5,10 +5,9 @@ from typing import Any, Type, TypeVar
 import aiomisc
 import orjson
 from aiokafka import AIOKafkaProducer
-from pydantic import BaseModel
-
 from events.constants import Events, Services, get_topic_name
 from events.kafka_utils.config import KafkaConfig
+from pydantic import BaseModel
 
 OutputType = TypeVar('OutputType', bound=BaseModel)
 

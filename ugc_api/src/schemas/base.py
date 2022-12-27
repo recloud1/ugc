@@ -1,14 +1,13 @@
 import datetime
 import uuid
-from typing import Type, Any, TypeVar, Optional
+from typing import Any, Optional, Type, TypeVar
 
 import pydantic
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from utils.string_utils import to_camel
 
-ModelType = TypeVar('ModelType', bound=BaseModel)
+ModelType = TypeVar("ModelType", bound=BaseModel)
 
 
 class Model(BaseModel):
@@ -18,7 +17,9 @@ class Model(BaseModel):
         orm_mode = True
 
     @classmethod
-    async def from_orm_async(cls: Type['ModelType'], session: AsyncSession, obj: Any) -> 'ModelType':
+    async def from_orm_async(
+        cls: Type["ModelType"], session: AsyncSession, obj: Any
+    ) -> "ModelType":
         serialized = await session.run_sync(lambda session: cls.from_orm(obj))
 
         return serialized
@@ -40,13 +41,19 @@ class ListModel(Model):
     data: list[IdMixin]
     page: int
     per_page: int | None
-    total: int = pydantic.Field(None, description='total count of objects with specified filters/params')
+    total: int = pydantic.Field(
+        None, description="total count of objects with specified filters/params"
+    )
 
 
 class StatusResponse(Model):
-    detail: str = 'ok'
+    detail: str = "ok"
 
 
 class ErrResponse(Model):
     detail: str
     context: dict = pydantic.Field(default_factory=dict)
+
+
+class CountResponse(Model):
+    data: int

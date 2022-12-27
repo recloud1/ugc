@@ -1,7 +1,7 @@
-from typing import TypeVar, NewType
+from typing import NewType, TypeVar
 
-Entity = TypeVar('Entity')
+Entity = TypeVar("Entity")
 
 Id = int | str
 
-Count = NewType('Count', int)
+Count = NewType("Count", int)

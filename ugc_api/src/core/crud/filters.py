@@ -4,10 +4,9 @@
 import abc
 from typing import Any
 
+from core.crud.types import Entity
 from sqlalchemy import func
 from sqlalchemy.sql import Select
-
-from core.crud.types import Entity
 
 
 class AbstractFilter(abc.ABC):
@@ -65,9 +64,11 @@ class IlikeFilter(AbstractFilter):
             attr = getattr(model, self.required_fields)
         except AttributeError as e:
             raise ValueError(
-                f'specified attribute {self.required_fields} is not exists on model {model}'
+                f"specified attribute {self.required_fields} is not exists on model {model}"
             ) from e
-        query = query.where(attr.ilike(f'%{filter_params[self.required_fields].lower()}%'))
+        query = query.where(
+            attr.ilike(f"%{filter_params[self.required_fields].lower()}%")
+        )
 
         return query
 
@@ -86,12 +87,14 @@ class IncludeFilter(AbstractFilter):
     def __call__(self, query: Select, model: Entity, **filter_params: Any) -> Select:
         param = filter_params[self.required_fields]
         if type(param) != list:
-            raise TypeError(f"Parameter {self.required_fields} should be a list for IN comparison")
+            raise TypeError(
+                f"Parameter {self.required_fields} should be a list for IN comparison"
+            )
         try:
             attr = getattr(model, self.field_name)
         except AttributeError as e:
             raise ValueError(
-                f'specified attribute {self.field_name} is not exists on model {model}'
+                f"specified attribute {self.field_name} is not exists on model {model}"
             ) from e
         query = query.where(attr.in_(param))
         return query
@@ -122,15 +125,17 @@ class LevenshteinFilter(AbstractFilter):
         column_length = column_attr.property.columns[0].type.length
         if (column_length is None) or column_length >= 256:
             raise ValueError(
-                f"Unable to implement Levenshtein filter. It can be use only with"
-                f" text fields, that have length < 256"
+                "Unable to implement Levenshtein filter. It can be use only with"
+                " text fields, that have length < 256"
             )
 
     def __call__(self, query: Select, model: Entity, **filter_params: Any) -> Select:
         value = filter_params[self.required_fields]
 
         if len(value) > 255:
-            raise ValueError("Levenshtein filter can't work with string, having more than 255 characters")
+            raise ValueError(
+                "Levenshtein filter can't work with string, having more than 255 characters"
+            )
 
         source = func.lower(getattr(model, self.required_fields))
         # По-умолчанию левенштейн за каждый символ который необходимо вставить, изменить,

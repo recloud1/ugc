@@ -1,9 +1,8 @@
 import datetime
 import uuid
 
-from pydantic import BaseModel
-
 from events.constants import Events
+from pydantic import BaseModel
 
 
 class EventMessage(BaseModel):

@@ -9,7 +9,7 @@ class ObjectNotExists(Exception):
         self.ids = ids
 
     def __repr__(self):
-        return f'{self.__class__.__name__}<message={self.message}, ids={self.ids}>'
+        return f"{self.__class__.__name__}<message={self.message}, ids={self.ids}>"
 
     def __str__(self):
         return self.message
@@ -20,7 +20,7 @@ class ObjectAlreadyExists(Exception):
         self.message = message
 
     def __repr__(self):
-        return f'{self.__class__.__name__}<message={self.message}>'
+        return f"{self.__class__.__name__}<message={self.message}>"
 
     def __str__(self):
         return self.message

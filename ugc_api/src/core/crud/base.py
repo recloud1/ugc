@@ -1,20 +1,17 @@
 import logging
 import re
-from typing import Type, Any, Generic, Callable, Iterable, Optional
+from typing import Any, Callable, Generic, Iterable, Optional, Type
 
 import sqlalchemy
+from core.crud.exceptions import LogicException
+from core.crud.filters import AbstractFilter
+from core.crud.retrieve import pagination, retrieve_object
+from core.crud.types import Count, Entity
+from schemas.base import Model
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
-
-from core.crud.exceptions import LogicException
-from core.crud.filters import AbstractFilter
-from core.crud.retrieve import retrieve_object, pagination
-from core.crud.types import Entity, Count
-
-from schemas.base import Model
-
 # sorting params
 from utils.string_utils import to_snake
 
@@ -23,7 +20,9 @@ SortingElementsType = Iterable[str | tuple[str, SortingFunctionType]]
 
 CollectingKey = str | tuple[str, ...]
 CollectingFunctionType = Callable[[Select, Entity, Optional[Any]], Any]
-CollectingElementsType = Iterable[CollectingKey | tuple[CollectingKey, CollectingFunctionType]]
+CollectingElementsType = Iterable[
+    CollectingKey | tuple[CollectingKey, CollectingFunctionType]
+]
 
 # filtering params
 FilterValue = Any
@@ -34,92 +33,78 @@ FilterElementsType = Iterable[CollectingKey | tuple[CollectingKey, FilterFunctio
 # noinspection PyMethodMayBeStatic
 class BaseCrud(Generic[Entity]):
     def __init__(
-            self,
-            entity: Type[Entity],
-            get_options: list[Any] = None,
-            get_multi_options: list[Any] = None,
-            sorting_by: SortingElementsType = None,
-            filtering_by: SortingElementsType = None,
-
+        self,
+        entity: Type[Entity],
+        get_options: list[Any] = None,
+        get_multi_options: list[Any] = None,
+        sorting_by: SortingElementsType = None,
+        filtering_by: SortingElementsType = None,
     ):
         self.get_options = get_options or []
         self.get_multi_options = get_multi_options or []
         self.entity = entity
 
         self.sort_fields = self._register_sorting(sorting_by) if sorting_by else dict()
-        self.filter_fields = self._register_filtering(filtering_by) if filtering_by else dict()
+        self.filter_fields = (
+            self._register_filtering(filtering_by) if filtering_by else dict()
+        )
 
         self.logger = logging.getLogger(to_snake(self.__class__.__name__))
 
     async def get(
-            self,
-            session: AsyncSession,
-            id: int,
-            execution_options: dict[str, Any] = None
+        self, session: AsyncSession, id: int, execution_options: dict[str, Any] = None
     ) -> Entity | None:
         obj = await retrieve_object(
             session,
             self.entity,
             id,
             options=self.get_options,
-            execution_options=execution_options
+            execution_options=execution_options,
         )
 
         return obj
 
     async def get_multi(
-            self,
-            session: AsyncSession,
-            page: int,
-            per_page: int,
-            with_count: bool = True,
-            with_deleted: bool = False,
-            sort_by: str = 'id',
-            descending: bool = False,
-            execution_options: dict[str, Any] = None,
-            **filters
+        self,
+        session: AsyncSession,
+        page: int,
+        per_page: int,
+        with_count: bool = True,
+        with_deleted: bool = False,
+        sort_by: str = "id",
+        descending: bool = False,
+        execution_options: dict[str, Any] = None,
+        **filters,
     ) -> tuple[list[Entity], Count | None]:
-        query: Select = select(self.entity) \
-            .options(*self.get_multi_options) \
+        query: Select = (
+            select(self.entity)
+            .options(*self.get_multi_options)
             .execution_options(**(execution_options or {}))
+        )
 
         try:
             query = self._apply_filtering(query, **filters)
         except (ValueError, TypeError):
-            raise LogicException('Failed to apply filter')
+            raise LogicException("Failed to apply filter")
 
         try:
             query = self._apply_sorting(query, sort_by, descending)
         except (ValueError, TypeError):
-            raise LogicException('Failed to apply sorting')
+            raise LogicException("Failed to apply sorting")
 
         objects, count = await pagination(
-            session,
-            self.entity,
-            page,
-            per_page,
-            with_count,
-            with_deleted,
-            query
+            session, self.entity, page, per_page, with_count, with_deleted, query
         )
 
         return objects, count
 
     async def _after_values_extracted(
-            self,
-            session: AsyncSession,
-            values: dict,
-            is_create: bool = True
+        self, session: AsyncSession, values: dict, is_create: bool = True
     ) -> dict:
         return values
 
     async def create(
-            self,
-            session: AsyncSession,
-            data: Model,
-            *,
-            exclude: set[str] = None,
-            **kwargs
+        self, session: AsyncSession, data: Model, *, exclude: set[str] = None, **kwargs
     ) -> Entity:
         values = data.dict(exclude=exclude)
         values = await self._after_values_extracted(session, values)
@@ -131,11 +116,7 @@ class BaseCrud(Generic[Entity]):
         return obj
 
     async def update(
-            self,
-            session: AsyncSession,
-            obj: Entity,
-            data: Model,
-            exclude: set[str] = None
+        self, session: AsyncSession, obj: Entity, data: Model, exclude: set[str] = None
     ) -> Entity:
         values = data.dict(exclude=exclude)
         values = await self._after_values_extracted(session, values, is_create=False)
@@ -146,19 +127,24 @@ class BaseCrud(Generic[Entity]):
 
         return obj
 
-    def _register_filtering(self, filter_fields: FilterElementsType) -> dict[str, str | FilterFunctionType]:
+    def _register_filtering(
+        self, filter_fields: FilterElementsType
+    ) -> dict[str, str | FilterFunctionType]:
         """
         Сохраняет перечень доступных фильтров для CRUD'a
         :param filter_fields: перечень фильтров
         :return:
         """
-        return self.__collect_key_functions(filter_fields, 'filtering', allow_multiple_keys=True)
+        return self.__collect_key_functions(
+            filter_fields, "filtering", allow_multiple_keys=True
+        )
 
     def _parse_keys(
-            self, keys: str | tuple[str, ...],
-            allow_multiple_keys=False,
-            error_name: str = 'sorting',
-            name_validation: bool = True
+        self,
+        keys: str | tuple[str, ...],
+        allow_multiple_keys=False,
+        error_name: str = "sorting",
+        name_validation: bool = True,
     ) -> CollectingKey:
         """
         Функция для пред обработки передаваемых параметров для функций сортировки и прочего.
@@ -182,13 +168,15 @@ class BaseCrud(Generic[Entity]):
 
         parsed_keys: list[str] = list()
         for key in keys:
-            if name_validation and not re.fullmatch(r'[a-zA-Z0-9_]*', key):
-                raise ValueError(f'Key "{key}" is using an incorrect notation. Please write it pythonic')
+            if name_validation and not re.fullmatch(r"[a-zA-Z0-9_]*", key):
+                raise ValueError(
+                    f'Key "{key}" is using an incorrect notation. Please write it pythonic'
+                )
 
             parsed_keys.append(key)
 
         if len(parsed_keys) == 0:
-            raise ValueError(f'No keys detected in input param: {keys}')
+            raise ValueError(f"No keys detected in input param: {keys}")
 
         if (not allow_multiple_keys) and len(parsed_keys) > 1:
             raise ValueError(
@@ -198,15 +186,18 @@ class BaseCrud(Generic[Entity]):
         return tuple(parsed_keys) if len(parsed_keys) > 1 else parsed_keys[0]
 
     def __collect_key_functions(
-            self, values: CollectingElementsType,
-            name: str,
-            allow_multiple_keys=False,
+        self,
+        values: CollectingElementsType,
+        name: str,
+        allow_multiple_keys=False,
     ) -> dict[CollectingKey, str | CollectingFunctionType]:
         registered = dict()
         for param in values:
             if (type(param) == str) or isinstance(param, InstrumentedAttribute):
                 # для маппинга по полям модели не поддерживаются множественные ключи
-                key = self._parse_keys(param, allow_multiple_keys=False, error_name=name)
+                key = self._parse_keys(
+                    param, allow_multiple_keys=False, error_name=name
+                )
                 registered[key] = key
             elif type(param) == tuple:
                 if len(param) != 2:
@@ -216,7 +207,9 @@ class BaseCrud(Generic[Entity]):
                     )
 
                 key, key_callback = param
-                key = self._parse_keys(key, allow_multiple_keys=allow_multiple_keys, error_name=name)
+                key = self._parse_keys(
+                    key, allow_multiple_keys=allow_multiple_keys, error_name=name
+                )
                 if not callable(key_callback):
                     raise TypeError(f"{name.capitalize()} function should be callable")
 
@@ -224,10 +217,12 @@ class BaseCrud(Generic[Entity]):
             elif isinstance(param, AbstractFilter):
                 raise TypeError(
                     f'Unsupported data type "{type(param)}" for {name.lower()}. '
-                    f'Maybe, you forgot to call .use() method ?'
+                    f"Maybe, you forgot to call .use() method ?"
                 )
             else:
-                raise TypeError(f'Unsupported data type "{type(param)}" for {name.lower()}')
+                raise TypeError(
+                    f'Unsupported data type "{type(param)}" for {name.lower()}'
+                )
 
         return registered
 
@@ -265,7 +260,9 @@ class BaseCrud(Generic[Entity]):
                     raise ValueError("Filtering field does not exists")
         return query
 
-    def _apply_user_defined_filtering(self, query: Select, **filter_params: Any) -> Select:
+    def _apply_user_defined_filtering(
+        self, query: Select, **filter_params: Any
+    ) -> Select:
         """
         Вариант фильтрации по указанным пользователем параметрам.
 
@@ -277,17 +274,25 @@ class BaseCrud(Generic[Entity]):
         """
         for crud_filter_keys, crud_filter in self.filter_fields.items():
             # проверяем совпадение указанных для фильтров ключей с переданными параметрами фильтрации
-            crud_filter_keys = crud_filter_keys if type(crud_filter_keys) == tuple else (crud_filter_keys,)
+            crud_filter_keys = (
+                crud_filter_keys
+                if type(crud_filter_keys) == tuple
+                else (crud_filter_keys,)
+            )
             if not all([key in filter_params for key in crud_filter_keys]):
                 continue
 
             if type(crud_filter) == str:
                 filtering_value = filter_params[crud_filter]
                 # getattr без параметра по умолчанию, т.к. его существование проверяется при регистрации сортировки
-                query = query.where(getattr(self.entity, crud_filter) == filtering_value)
+                query = query.where(
+                    getattr(self.entity, crud_filter) == filtering_value
+                )
             elif callable(crud_filter):
                 try:
-                    callback_filter_params = {k: v for k, v in filter_params.items() if k in crud_filter_keys}
+                    callback_filter_params = {
+                        k: v for k, v in filter_params.items() if k in crud_filter_keys
+                    }
                     query = crud_filter(query, self.entity, **callback_filter_params)
                 except Exception as e:
                     self.logger.error(
@@ -314,17 +319,20 @@ class BaseCrud(Generic[Entity]):
         return query
 
     def _register_sorting(
-            self,
-            allowed_sort_fields: SortingElementsType
+        self, allowed_sort_fields: SortingElementsType
     ) -> dict[str, str | SortingFunctionType]:
         """
         Сохраняет доступные поля для сортировки в CRUD'e
         :param allowed_sort_fields:
         :return:
         """
-        return self.__collect_key_functions(allowed_sort_fields, 'sorting', allow_multiple_keys=False)
+        return self.__collect_key_functions(
+            allowed_sort_fields, "sorting", allow_multiple_keys=False
+        )
 
-    def _apply_sorting(self, query: Select, sort_name: str, descending: bool = False) -> Select:
+    def _apply_sorting(
+        self, query: Select, sort_name: str, descending: bool = False
+    ) -> Select:
         """
         Применение функции сортировки к запросу по сконфигурированным функциям сортировки.
 
@@ -352,7 +360,9 @@ class BaseCrud(Generic[Entity]):
         if sorting_elem is None:
             raise ValueError("Specified sorting param does not exists")
         elif type(sorting_elem) == str:
-            return query.order_by(order_direction(getattr(self.entity, sort_name, None)))
+            return query.order_by(
+                order_direction(getattr(self.entity, sort_name, None))
+            )
         elif callable(sorting_elem):
             try:
                 return query.order_by(order_direction(sorting_elem(query, self.entity)))

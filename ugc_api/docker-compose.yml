@@ -20,6 +20,19 @@ services:
       timeout: 5s
       retries: 5
 
+  mongo:
+    restart: unless-stopped
+    image: mongo
+    container_name: ugc_mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGO_NAME}
+    env_file:
+      - ./.env
+
   api:
     container_name: 'ugc_service_api'
     restart: always
@@ -32,7 +45,7 @@ services:
 
   producer:
     container_name: 'ugc_service_kafka_producer'
-    #    restart: on-failure
+    restart: on-failure
     build:
       context: .
       args:

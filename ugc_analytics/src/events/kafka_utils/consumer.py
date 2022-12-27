@@ -1,14 +1,13 @@
-from aiomisc import Service
-from abc import abstractmethod
-from typing import TypeVar, Type
-
-from pydantic import BaseModel, ValidationError
 import asyncio
 import logging
+from abc import abstractmethod
+from typing import Type, TypeVar
+
 import orjson
 from aiokafka import AIOKafkaConsumer, ConsumerRecord
-
+from aiomisc import Service
 from events.kafka_utils.config import KafkaConfig
+from pydantic import BaseModel, ValidationError
 
 InputType = TypeVar('InputType', bound=BaseModel)
 

@@ -1,11 +1,13 @@
-from typing import Optional, Any, TypeVar, Callable
+from typing import Any, Callable, Optional, TypeVar
 
 from sqlalchemy.sql import Select
 
-Query = TypeVar('Query', bound=Select)
+Query = TypeVar("Query", bound=Select)
 
 
-def add_filter_condition(query: Query, condition: Any | Callable, if_passed: Optional[Any]) -> Select:
+def add_filter_condition(
+    query: Query, condition: Any | Callable, if_passed: Optional[Any]
+) -> Select:
     """
     Добавление фильтра к запросу при наличии объекта проверки (!= None)
 

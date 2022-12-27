@@ -1,0 +1,57 @@
+version: '3.7'
+services:
+  elasticsearch:
+    image: elasticsearch:8.4.1
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+    ports:
+      - '9200:9200'
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+
+  logstash:
+    image: logstash:8.4.1
+    restart: unless-stopped
+    environment:
+      - XPACK_MONITORING_ENABLED="false"
+      - ES_HOST=elasticsearch:9200
+    ports:
+      - '5044:5044'
+    volumes:
+      - /tmp/logs/nginx/:/var/log/nginx/
+      - ./config/logstash.conf:/config/logstash.conf:ro
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: kibana:8.4.1
+    ports:
+      - '5601:5601'
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+
+  nginx:
+    build: ./nginx
+    volumes:
+      - ./tmp/logs/nginx/:/var/log/nginx/
+    ports:
+      - '80:80'
+
+  filebeat:
+    image: filebeat:8.4.1
+    volumes:
+      - ./tmp/logs/nginx:/var/log/nginx:ro
+      - ./config/filebeat.yml:/usr/share/filebeat/filebeat.yml
+    depends_on:
+      - nginx
+      - logstash
+      - elasticsearch
+      - kibana
+
+
+volumes:
+  elastic_data:
