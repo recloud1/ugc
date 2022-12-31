@@ -1,10 +1,11 @@
-from uuid import UUID
+from http import HTTPStatus
 
 import fastapi
-from dependencies.auth import UserAuthorized
-from fastapi import Depends, Path
-from internal.likes import movie_like_crud
+from fastapi import Depends, Query
 from motor.motor_asyncio import AsyncIOMotorClient
+
+from dependencies.auth import user_authorized
+from internal.likes import movie_like_crud
 from schemas.auth import UserInfo
 from schemas.base import StatusResponse
 from schemas.likes import MovieLikeCount, MovieLikeCreate
@@ -14,15 +15,15 @@ likes = fastapi.APIRouter()
 
 
 @likes.get(
-    "/{movie_id}/count",
+    "/",
     response_model=MovieLikeCount,
     summary="Получение количества лайков фильма",
     description="",
 )
 async def get_film_like_count(
-    movie_id: str = Path(...),
+    movie_id: str = Query(...),
     session: AsyncIOMotorClient = Depends(get_mongo_session),
-    author: UserInfo = Depends(UserAuthorized()),
+    author: UserInfo = Depends(user_authorized),
 ) -> MovieLikeCount:
     """
     Получение количества лайков и дизлайков определенного фильма
@@ -33,32 +34,32 @@ async def get_film_like_count(
     return MovieLikeCount(movie_id=movie_id, likes=movie_likes, dislikes=movie_dislikes)
 
 
-@likes.post("{movie_id}/add", response_model=StatusResponse)
+@likes.post("/", response_model=StatusResponse, status_code=HTTPStatus.CREATED)
 async def create_film_like(
-    movie_id: UUID = Path(...),
+    data: MovieLikeCreate,
     session: AsyncIOMotorClient = Depends(get_mongo_session),
-    author: UserInfo = Depends(UserAuthorized()),
+    author: UserInfo = Depends(user_authorized),
 ) -> StatusResponse:
     """
     Добавление лайка к фильму
     """
-    await movie_like_crud.create(
-        session, MovieLikeCreate(movie_id=movie_id, user_id=author.id)
-    )
+    await movie_like_crud.create(session, data, user_id=str(author.id))
 
     return StatusResponse()
 
 
-@likes.post("{movie_id}/remove", response_model=StatusResponse)
+@likes.delete("/", response_model=StatusResponse)
 async def delete_film_like(
-    movie_id: str = Path(...),
+    movie_id: str = Query(...),
     session: AsyncIOMotorClient = Depends(get_mongo_session),
-    author: UserInfo = Depends(UserAuthorized()),
+    author: UserInfo = Depends(user_authorized),
 ) -> StatusResponse:
     """
     Удаление лайка
     """
-    movie_like = await movie_like_crud.find(session, str(author.id), movie_id)
+    movie_like = await movie_like_crud.find(
+        session, user_id=str(author.id), movie_id=movie_id
+    )
 
     if not movie_like:
         return StatusResponse()

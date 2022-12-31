@@ -2,8 +2,9 @@ import datetime
 import uuid
 from typing import TypeVar
 
-from events.constants import Events
 from pydantic import BaseModel, Field
+
+from events.constants import Events
 
 Payload = TypeVar("Payload", bound=BaseModel)
 

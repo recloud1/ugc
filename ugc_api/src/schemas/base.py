@@ -5,6 +5,7 @@ from typing import Any, Optional, Type, TypeVar
 import pydantic
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from utils.string_utils import to_camel
 
 ModelType = TypeVar("ModelType", bound=BaseModel)

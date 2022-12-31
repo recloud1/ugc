@@ -1,6 +1,7 @@
-import requests
-from core.config import envs
+from aiohttp import ClientSession
 from fastapi import Depends, security
+
+from core.config import envs
 from schemas.auth import UserInfo
 
 
@@ -12,16 +13,15 @@ def jwt_token_dep(
     return token.credentials
 
 
-class UserAuthorized:
-    def __init__(self):
-        """
-        Зависимость для работы с разрешениями для http endpoint'ов.
-        """
+async def user_authorized(token: str = Depends(jwt_token_dep)) -> UserInfo:
+    """
+    Зависимость для работы с разрешениями для http endpoint'ов.
+    """
+    url = envs.external.auth
+    data = {"token": token}
+    async with ClientSession() as session:
+        async with session.post(url=url, json=data) as response:
+            data = await response.json()
+            result = UserInfo(**data)
 
-    def __call__(self, token: str = Depends(jwt_token_dep)) -> UserInfo:
-        url = envs.external.auth
-        data = {"token": token}
-        data = requests.post(url=url, json=data).json()
-        result = UserInfo(**data)
-
-        return result
+            return result

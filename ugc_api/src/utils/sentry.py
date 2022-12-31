@@ -5,8 +5,11 @@ import fastapi
 import sentry_sdk
 import starlette
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
-from starlette.middleware.base import (BaseHTTPMiddleware, DispatchFunction,
-                                       RequestResponseEndpoint)
+from starlette.middleware.base import (
+    BaseHTTPMiddleware,
+    DispatchFunction,
+    RequestResponseEndpoint,
+)
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp

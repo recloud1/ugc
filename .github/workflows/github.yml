@@ -26,7 +26,7 @@ jobs:
 
       - name: Lint with flake8
         run: |
-          flake8 ugc_api/ --select=F,E112,E113,E304,E502,E702,E703,E71,E72,E731,E711,W191,W6 --statistics --format=html --htmldir=linter_result_${{ matrix.python-version }}
+          flake8 ugc_api/ --select=F,E112,E113,E304,E502,E702,E703,E72,W191,W6 --ignore=F401,F403 --statistics --format=html --htmldir=linter_result_${{ matrix.python-version }}
 
       - name: black
         run: |

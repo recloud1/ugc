@@ -1,13 +1,14 @@
 import datetime
 
 import fastapi
-from dependencies.auth import UserAuthorized
-from events.constants import Events
 from fastapi import Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from dependencies.auth import user_authorized
+from events.constants import Events
 from internal.events import event_crud
 from schemas.auth import UserInfo
 from schemas.event_messages import EventMessage, EventMessageBare
-from sqlalchemy.ext.asyncio import AsyncSession
 from utils.db_session import get_db_session
 
 events = fastapi.APIRouter()
@@ -23,7 +24,7 @@ async def save_event_message(
     data: EventMessage,
     name: Events = Query(...),
     session: AsyncSession = Depends(get_db_session),
-    author: UserInfo = Depends(UserAuthorized()),
+    author: UserInfo = Depends(user_authorized),
 ) -> EventMessageBare:
     """
     Сохранение пользовательского события

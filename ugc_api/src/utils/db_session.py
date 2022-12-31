@@ -1,12 +1,12 @@
 import contextlib
 from typing import AsyncContextManager, AsyncGenerator, Callable
 
-from core.config import envs
 from motor.motor_asyncio import AsyncIOMotorClient
-from sqlalchemy.ext.asyncio import (AsyncEngine, AsyncSession,
-                                    create_async_engine)
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
+
+from core.config import envs
 
 
 def async_session_factory(

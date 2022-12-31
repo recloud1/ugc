@@ -5,9 +5,10 @@ from typing import Any, Type, TypeVar
 import aiomisc
 import orjson
 from aiokafka import AIOKafkaProducer
+from pydantic import BaseModel, ValidationError
+
 from events.constants import Events, get_topic_name
 from events.kafka_utils.config import KafkaConfig
-from pydantic import BaseModel, ValidationError
 
 OutputType = TypeVar("OutputType", bound=BaseModel)
 
@@ -71,7 +72,7 @@ class KafkaProducer(aiomisc.Service):
         Функция автоматически вызывается, если при отправке сообщения не был
          передан объект соответствующего типа
         """
-        raise NotImplemented("Packing data is not implemented")
+        raise NotImplementedError("Packing data is not implemented")
 
     def _create_producer(self) -> AIOKafkaProducer:
         return AIOKafkaProducer(

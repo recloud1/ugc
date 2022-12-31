@@ -1,9 +1,9 @@
 import fastapi
-from core.crud.exceptions import (LogicException, ObjectAlreadyExists,
-                                  ObjectNotExists)
-from schemas.base import ErrResponse
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+
+from core.crud.exceptions import LogicException, ObjectAlreadyExists, ObjectNotExists
+from schemas.base import ErrResponse
 
 
 def apply_exception_handlers(app: fastapi.FastAPI):

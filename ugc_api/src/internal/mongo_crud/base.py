@@ -1,17 +1,19 @@
 from typing import Any, TypeVar
 
-from core.crud.exceptions import ObjectNotExists
-from internal.mongo_crud.constants import Collections
+from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from pymongo.results import InsertOneResult
+
+from core.crud.exceptions import ObjectNotExists
+from internal.mongo_crud.constants import Collections
 
 ModelType = TypeVar("ModelType", bound=BaseModel)
 
 BATCH_SIZE = 100
 
 
-class BaseCrud:
+class BaseMongoCrud:
     def __init__(
         self,
         db_name: str,
@@ -29,7 +31,7 @@ class BaseCrud:
         _, coll = self._get_db(session)
         inserted: InsertOneResult = await coll.insert_one({**data.dict(), **params})
 
-        result = await self._get(session, str(inserted.inserted_id))
+        result, id_ = await self._get(session, str(inserted.inserted_id))
 
         return dict(result)
 
@@ -55,14 +57,16 @@ class BaseCrud:
     ) -> dict:
         _, coll = self._get_db(session)
         obj, _id = await self._get(session, _id)
-        result = await coll.update_one({"_id": _id}, {"$set": data.dict()})
+        await coll.update_one({"_id": _id}, {"$set": data.dict()})
 
-        return result
+        result, _id = await self._get(session, _id)
+
+        return dict(result)
 
     async def delete(self, session: AsyncIOMotorClient, _id: str):
         _, coll = self._get_db(session)
-        obj, _id = self._get(session, _id)
-        result = coll.delete_one({"_id": _id})
+        obj, _id = await self._get(session, _id)
+        result = await coll.delete_one({"_id": _id})
 
         return result
 
@@ -80,7 +84,7 @@ class BaseCrud:
 
     async def _get(self, session: AsyncIOMotorClient, _id: str) -> Any:
         _, coll = self._get_db(session)
-        obj = await coll.find_one({"_id": _id})
+        obj = await coll.find_one({"_id": ObjectId(_id)})
         if not obj:
             raise ObjectNotExists("Объект не найден")
 

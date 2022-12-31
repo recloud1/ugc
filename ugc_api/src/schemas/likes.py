@@ -1,16 +1,14 @@
 from schemas.base import Model
 
 
-class CommonLike(Model):
-    user_id: str
-
-
-class MovieLikeCreate(CommonLike):
+class MovieLikeCreate(Model):
     movie_id: str
+    value: int
 
 
 class MovieLikeBare(MovieLikeCreate):
     id: str
+    user_id: str
 
 
 class MovieLikeCount(Model):

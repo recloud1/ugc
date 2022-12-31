@@ -4,6 +4,7 @@ import sentry_sdk
 from fastapi import FastAPI
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
 from utils.sentry import SentryFullAsgiMiddleware
 
 
@@ -28,9 +29,14 @@ def set_logging(
         if app is not None:
             SentryFullAsgiMiddleware(app)
 
-        sentry_sdk.init(
-            sentry_url,
-            traces_sample_rate=1.0,
-            environment=environment,
-            integrations=[sentry_logging, SqlalchemyIntegration()],
-        )
+        try:
+            sentry_sdk.init(
+                sentry_url,
+                traces_sample_rate=1.0,
+                environment=environment,
+                integrations=[sentry_logging, SqlalchemyIntegration()],
+            )
+        except Exception as e:
+            logging.warning(
+                f"Connect to sentry failed. Type Error: {type(e)}, {str(e)}"
+            )

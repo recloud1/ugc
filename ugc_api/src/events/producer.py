@@ -3,13 +3,14 @@ from typing import Any, Iterable
 
 import aiomisc
 from aiomisc.service.periodic import PeriodicService
+from sqlalchemy import select
+
 from core.config import envs
 from events.constants import Events
 from events.kafka_utils.config import KafkaConfig
 from events.kafka_utils.producer import KafkaProducer
 from models.general import Event
 from schemas.event_messages import EventMessageBare
-from sqlalchemy import select
 from utils.db_session import db_session_manager
 from utils.time import now
 

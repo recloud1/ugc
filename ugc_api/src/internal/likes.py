@@ -1,10 +1,11 @@
-from core.config import envs
-from internal.mongo_crud.base import BaseCrud
-from internal.mongo_crud.constants import Collections
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from core.config import envs
+from internal.mongo_crud.base import BaseMongoCrud
+from internal.mongo_crud.constants import Collections
 
-class MovieLikeCrud(BaseCrud):
+
+class MovieLikeCrud(BaseMongoCrud):
     async def count(
         self, session: AsyncIOMotorClient, movie_id: str
     ) -> tuple[int, int]:
@@ -18,4 +19,6 @@ class MovieLikeCrud(BaseCrud):
         return likes, dislikes
 
 
-movie_like_crud = BaseCrud(db_name=envs.mongo.name, collection_name=Collections.likes)
+movie_like_crud = MovieLikeCrud(
+    db_name=envs.mongo.name, collection_name=Collections.likes
+)

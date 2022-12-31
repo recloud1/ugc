@@ -4,9 +4,10 @@
 import abc
 from typing import Any
 
-from core.crud.types import Entity
 from sqlalchemy import func
 from sqlalchemy.sql import Select
+
+from core.crud.types import Entity
 
 
 class AbstractFilter(abc.ABC):

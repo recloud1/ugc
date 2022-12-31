@@ -13,6 +13,7 @@ class App(Settings):
     port: int = 8001
     cors_policy_enabled: bool = False
     environment: str = "LOCAL_TEST"
+    test_token: str | None
 
     class Config(Settings.Config):
         env_prefix = "APP_"
@@ -66,7 +67,7 @@ class External(Settings):
 
 
 class LoggingConfig(Settings):
-    sentry_url: str
+    sentry_url: str | None
     logstash_host: str
     logstash_port: int
     level: str = "DEBUG"

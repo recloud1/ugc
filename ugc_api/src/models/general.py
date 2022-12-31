@@ -1,6 +1,7 @@
-from models import Base
 from sqlalchemy import Column, DateTime, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+
+from models import Base
 from utils.time import now
 
 
