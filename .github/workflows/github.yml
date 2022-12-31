@@ -12,7 +12,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: [3.8, 3.9, 3.10]
+        python-version: [3.8, 3.9, 3.10.x]
     steps:
       - uses: actions/checkout@v2
       - name: Python version ${{ matrix.python-version }}
