@@ -30,11 +30,11 @@ jobs:
 
       - name: black
         run: |
-          black --check .
+          black --check ugc_api/ 
 
       - name: isort
         run: |
-          isort --check .
+          isort --check ugc_api/ 
 
       - name: Send telegram message
         uses: appleboy/telegram-action@master
